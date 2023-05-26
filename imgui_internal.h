@@ -162,7 +162,18 @@ struct ImGuiWindowSettings;         // Storage for a window .ini settings (we ke
 
 // Enumerations
 // Use your programming IDE "Go to definition" facility on the names of the center columns to find the actual flags/enum lists.
-enum ImGuiLocKey : int;                 // -> enum ImGuiLocKey              // Enum: a localization entry for translation.
+enum ImGuiLocKey
+{
+    ImGuiLocKey_TableSizeOne,
+    ImGuiLocKey_TableSizeAllFit,
+    ImGuiLocKey_TableSizeAllDefault,
+    ImGuiLocKey_TableResetOrder,
+    ImGuiLocKey_WindowingMainMenuBar,
+    ImGuiLocKey_WindowingPopup,
+    ImGuiLocKey_WindowingUntitled,
+    ImGuiLocKey_DockingHideTabBar,
+    ImGuiLocKey_COUNT
+};
 typedef int ImGuiDataAuthority;         // -> enum ImGuiDataAuthority_      // Enum: for storing the source authority (dock node vs window) of a field
 typedef int ImGuiLayoutType;            // -> enum ImGuiLayoutType_         // Enum: Horizontal or vertical
 
@@ -246,7 +257,7 @@ namespace ImStb
 #define IMGUI_DEBUG_LOG_VIEWPORT(...)   do { if (g.DebugLogFlags & ImGuiDebugLogFlags_EventViewport) IMGUI_DEBUG_LOG(__VA_ARGS__); } while (0)
 
 // Static Asserts
-#define IM_STATIC_ASSERT(_COND)         static_assert(_COND, "")
+#define IM_STATIC_ASSERT(_COND)         typedef int __static_assert_balls[(_COND) ? 1 : -1]
 
 // "Paranoid" Debug Asserts are meant to only be enabled during specific debugging/work, otherwise would slow down the code too much.
 // We currently don't have many of those so the effect is currently negligible, but onward intent to add more aggressive ones in the code.
@@ -496,17 +507,17 @@ IM_MSVC_RUNTIME_CHECKS_OFF
 struct ImVec1
 {
     float   x;
-    constexpr ImVec1()         : x(0.0f) { }
-    constexpr ImVec1(float _x) : x(_x) { }
+     ImVec1()         : x(0.0f) { }
+     ImVec1(float _x) : x(_x) { }
 };
 
 // Helper: ImVec2ih (2D vector, half-size integer, for long-term packed storage)
 struct ImVec2ih
 {
     short   x, y;
-    constexpr ImVec2ih()                           : x(0), y(0) {}
-    constexpr ImVec2ih(short _x, short _y)         : x(_x), y(_y) {}
-    constexpr explicit ImVec2ih(const ImVec2& rhs) : x((short)rhs.x), y((short)rhs.y) {}
+     ImVec2ih()                           : x(0), y(0) {}
+     ImVec2ih(short _x, short _y)         : x(_x), y(_y) {}
+     explicit ImVec2ih(const ImVec2& rhs) : x((short)rhs.x), y((short)rhs.y) {}
 };
 
 // Helper: ImRect (2D axis aligned bounding-box)
@@ -516,10 +527,10 @@ struct IMGUI_API ImRect
     ImVec2      Min;    // Upper-left
     ImVec2      Max;    // Lower-right
 
-    constexpr ImRect()                                        : Min(0.0f, 0.0f), Max(0.0f, 0.0f)  {}
-    constexpr ImRect(const ImVec2& min, const ImVec2& max)    : Min(min), Max(max)                {}
-    constexpr ImRect(const ImVec4& v)                         : Min(v.x, v.y), Max(v.z, v.w)      {}
-    constexpr ImRect(float x1, float y1, float x2, float y2)  : Min(x1, y1), Max(x2, y2)          {}
+     ImRect()                                        : Min(0.0f, 0.0f), Max(0.0f, 0.0f)  {}
+     ImRect(const ImVec2& min, const ImVec2& max)    : Min(min), Max(max)                {}
+     ImRect(const ImVec4& v)                         : Min(v.x, v.y), Max(v.z, v.w)      {}
+     ImRect(float x1, float y1, float x2, float y2)  : Min(x1, y1), Max(x2, y2)          {}
 
     ImVec2      GetCenter() const                   { return ImVec2((Min.x + Max.x) * 0.5f, (Min.y + Max.y) * 0.5f); }
     ImVec2      GetSize() const                     { return ImVec2(Max.x - Min.x, Max.y - Min.y); }
@@ -715,7 +726,9 @@ struct ImChunkStream
 struct ImGuiTextIndex
 {
     ImVector<int>   LineOffsets;
-    int             EndOffset = 0;                          // Because we don't own text buffer we need to maintain EndOffset (may bake in LineOffsets?)
+    int             EndOffset;                          // Because we don't own text buffer we need to maintain EndOffset (may bake in LineOffsets?)
+
+    ImGuiTextIndex() : EndOffset(0) {}
 
     void            clear()                                 { LineOffsets.clear(); EndOffset = 0; }
     int             size()                                  { return LineOffsets.Size; }
@@ -1826,18 +1839,6 @@ struct ImGuiSettingsHandler
 //-----------------------------------------------------------------------------
 
 // This is experimental and not officially supported, it'll probably fall short of features, if/when it does we may backtrack.
-enum ImGuiLocKey : int
-{
-    ImGuiLocKey_TableSizeOne,
-    ImGuiLocKey_TableSizeAllFit,
-    ImGuiLocKey_TableSizeAllDefault,
-    ImGuiLocKey_TableResetOrder,
-    ImGuiLocKey_WindowingMainMenuBar,
-    ImGuiLocKey_WindowingPopup,
-    ImGuiLocKey_WindowingUntitled,
-    ImGuiLocKey_DockingHideTabBar,
-    ImGuiLocKey_COUNT
-};
 
 struct ImGuiLocEntry
 {
@@ -1869,17 +1870,29 @@ enum ImGuiDebugLogFlags_
 
 struct ImGuiMetricsConfig
 {
-    bool        ShowDebugLog = false;
-    bool        ShowStackTool = false;
-    bool        ShowWindowsRects = false;
-    bool        ShowWindowsBeginOrder = false;
-    bool        ShowTablesRects = false;
-    bool        ShowDrawCmdMesh = true;
-    bool        ShowDrawCmdBoundingBoxes = true;
-    bool        ShowAtlasTintedWithTextColor = false;
-    bool        ShowDockingNodes = false;
-    int         ShowWindowsRectsType = -1;
-    int         ShowTablesRectsType = -1;
+    bool        ShowDebugLog;
+    bool        ShowStackTool;
+    bool        ShowWindowsRects;
+    bool        ShowWindowsBeginOrder;
+    bool        ShowTablesRects;
+    bool        ShowDrawCmdMesh;
+    bool        ShowDrawCmdBoundingBoxes;
+    bool        ShowAtlasTintedWithTextColor;
+    bool        ShowDockingNodes;
+    int         ShowWindowsRectsType;
+    int         ShowTablesRectsType;
+
+    ImGuiMetricsConfig() : ShowDebugLog(false),
+                           ShowStackTool(false),
+                           ShowWindowsRects(false),
+                           ShowWindowsBeginOrder(false),
+                           ShowTablesRects(false),
+                           ShowDrawCmdMesh(true),
+                           ShowDrawCmdBoundingBoxes(true),
+                           ShowAtlasTintedWithTextColor(false),
+                           ShowDockingNodes(false),
+                           ShowWindowsRectsType(-1),
+                           ShowTablesRectsType(-1) {}
 };
 
 struct ImGuiStackLevelInfo
